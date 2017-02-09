@@ -1,0 +1,80 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "My Flow API",
+    "version": "0.0.1"
+  },
+  "basePath": "/",
+  "paths": {
+    "/register": {
+      "post": {
+        "summary": "Register",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/command": {
+      "post": {
+        "summary": "Command",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/trigger": {
+      "post": {
+        "summary": "Trigger",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/poll": {
+      "get": {
+        "summary": "Poll",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "summary": "Status GET /status",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/serial": {
+      "get": {
+        "summary": "get serial",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/deviceID": {
+      "get": {
+        "summary": "get deviceID",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}

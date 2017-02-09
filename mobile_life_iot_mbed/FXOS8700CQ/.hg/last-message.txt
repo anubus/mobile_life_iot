@@ -1,0 +1,1 @@
+changes to the AVNET_ATT_Cellular_IOT project to support GPS, Si7021, and voltage monitoring.
