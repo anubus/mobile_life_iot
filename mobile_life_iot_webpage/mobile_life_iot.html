@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-61079317-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+  <head>
+    <meta charset="utf-8"/>
+    <title>MobileLifeIoT</title>
+    <link rel="stylesheet" type="text/css"
+          href="https://fonts.googleapis.com/css?family=Roboto">
+
+    <style>
+      body {
+        background-color: #fff8f0;
+        font-family: 'Roboto', serif;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+      .logo {
+        position: absolute;
+        width: 100px;
+        top: 25px;
+        right: 25px;
+        z-index: 2;
+      }
+      .sidebar {
+        position: relative;
+        width: 33%;    
+      }
+
+      .map {
+        border-left: 1px solid #fff8f0;
+        position: absolute;
+        left: 33%;
+        width: 67%;
+        bottom: 100px; 
+        top: 0;
+        z-index:1;
+      }
+      .chart {
+        border-top: 10px solid #fff8f0;
+        border-bottom: 2px solid #7abe9a;
+        background-color: #fff8f0;
+        position: relative;
+        z-index: 2;
+      }
+      .chart-plot{
+        position: absolute;
+        bottom: 0;
+        z-index: 2;
+      }
+
+    </style>
+
+    <script type="text/javascript" src="https://pubnub.github.io/eon/v/eon/1.0.0/eon.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://pubnub.github.io/eon/v/eon/1.0.0/eon.css"/>
+
+</head>
+
+<body>
+
+  <img src="images/anubusembedded_logo_map_circle.png" class="logo" alt="Anubus Embedded">
+
+  <p align='center' class='sidebar'><b>Airstream Status</b>
+      <br><font size="2">Mobile Life IoT</font>
+      <br><font size="1">Using <a href="https://flow.att.io/">Flow</a>, <a href="https://www.pubnub.com/">PubNub</a> and, <a href="https://www.pubnub.com/developers/eon/">Eon</a></font>
+      <br><font size="1">Updated: <span id="FormattedTime"<span id="UpdateTime"></span>
+      Satellites: <span id="Satellites"></span></font>
+  </p>
+
+  <div id='gauge_temp' class='sidebar'>Gauge_Temp</div>
+  <div id='gauge_voltage' class='sidebar'>Gauge_Voltage</div>
+  <div id="chart" class='chart'>
+     <div id="chart-plot1" class='chart-plot'>Chart</div>
+  </div>  
+  <div id="map" class='map'>Map</div>
+
+  <script type="text/javascript">
+
+  var pubnub = new PubNub({
+    subscribeKey: '<your subscription key>',
+  });
+
+  pubnub.addListener({
+    message: function(m){
+      if (m.channel == "status"){
+        console.log(JSON.stringify(m));
+        document.getElementById("Satellites").innerHTML = m.message.eon.satellites;
+        var date = new Date(m.timetoken /10000);
+        var hours = date.getHours();
+        var minutes = "0" + date.getMinutes();
+        var seconds = "0" + date.getSeconds();
+        var formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+        document.getElementById("FormattedTime").innerHTML = formattedTime;
+      };
+    }
+  });
+
+  var chart = eon.chart({
+    pubnub: pubnub,
+    channels: ['status'],
+    history: true,
+    flow: true,
+    rate: 5000,
+    limit: 60,
+    transform: function(status){
+      return {eon:{
+        Volts: status.eon.batt_volt,
+        Temperature: status.eon.temp2,
+        Satellites: status.eon.satellites,
+        DeviceTemp: status.eon.temp
+      }}
+    },
+    generate: {
+      bindto: '#chart-plot1',
+      data: {
+        colors: {"Volts":"#00cc00", "Temperature": "#0066cc", "Satellites":"#9900cc", "DeviceTemp":"#66b3ff" },
+        type: "spline",
+        axes: {
+          Volts: 'y',
+          Temperature: 'y2',
+          Satellites: 'y',
+          DeviceTemp: 'y2'
+        }
+      },
+      transition: {
+        duration: 2000
+      },
+      legend: {
+        show: true,
+        position: 'inset'
+      },      
+      axis: {
+        y: {
+          label: "Volts/Satellites",
+          max: 15,
+          min: 0
+        },
+        y2: {
+          show: true,
+          label: "Temperature"
+      //    max: 110,
+      //    min: 0
+        },        
+        x: {
+          type: 'timeseries',
+          tick: {
+            culling: { max: 5},
+            // format: function (x){return x.getFullYear();},
+            format: '%m/%d %H:%M'
+          }
+        }
+      },
+      grid: {
+        x: {
+          show: true 
+          },
+        y: {
+          show: true 
+          }
+      }
+   }
+  });
+  chart.resize({height:180});
+
+  var gauge_temp = eon.chart({
+    pubnub: pubnub,
+    history: true,
+    channels: ['status'],
+    transform: function(status){
+      return {eon:{
+        temp: status.eon.temp2
+      }}
+    },
+    generate: {
+      bindto: '#gauge_temp',
+      data: {
+        type: 'gauge',
+      },
+      gauge: {
+        label: {
+            format: function(value, ratio) {
+                return value;
+            },
+            show: true
+        },
+        min: 0,
+        max: 120,
+        units: 'Temp °F'
+      },
+      color: {
+        pattern: ['#3399ff', '#00cc00', '#ff0000'],
+        threshold: {
+          values: [35, 90]
+        }
+      }
+    }
+  });
+
+  var gauge_voltage = eon.chart({
+    pubnub: pubnub,
+    history: true,
+    channels: ['status'],
+    transform: function(status){
+      return {eon:{
+        humidity: status.eon.batt_volt
+      }}
+    },
+    generate: {
+      bindto: '#gauge_voltage',
+      data: {
+        type: 'gauge',
+      },
+      gauge: {
+        label: {
+            format: function(value, ratio) {
+                return value;
+            },
+            show: true
+        },        
+        min: 0,
+        max: 20,
+        units: 'Volts'
+      },
+      color: {
+        pattern: ['#ff0000', '#00cc00', '#ff0000'],
+        threshold: {
+          values: [10.5, 15]
+        }
+      }
+    }
+  });
+
+  var map = eon.map({
+    id: 'map',    
+    mbId: '<your MapBox.com user ID',
+    mbToken: '<your MapBox.com todke>',
+    channels: ['location'],
+    pubnub: pubnub,
+    history: true,
+    message: function (data) {
+      //console.log(data[0].latlng)
+      map.setView(data[0].latlng, 14);
+    }
+  });
+
+  </script>
+ 
+  </body>
+</html>
+
+<!--
+  Map colors:
+   ##fff8f0 - tan
+   #05476c - blue
+   #7abe9a - green
+
+Gauge colors:
+   #ff0000 - red
+   #00cc00 - green
+   #3399ff - blue
+
+Other colors:
+   #0066cc - dark blue
+   #66b3ff - light blue
+   #ff0000 - bright red
+   #ff9999 - light red
+   #9900cc - purple
+-->
+
+
+ 
